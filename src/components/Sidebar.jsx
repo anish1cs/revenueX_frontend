@@ -46,7 +46,7 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
       {/* Menu */}
       <nav className="flex-1 px-2 py-4 space-y-2">
         <Link
-          to="/"
+          to="/dashboard"
           className="flex items-center gap-3 p-2 rounded-md hover:bg-blue-700"
         >
           <FaHome />
