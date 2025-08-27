@@ -1,18 +1,21 @@
 import React, { useEffect, useState } from "react";
-import { FaPlus, FaSpinner } from "react-icons/fa";
+import { FaPlus, FaSpinner, FaEdit } from "react-icons/fa";
 import axios from "axios";
 import domain from "../constants";
 
 const Customers = () => {
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [adding, setAdding] = useState(false); // loader for add btn
+  const [saving, setSaving] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [newCustomer, setNewCustomer] = useState({
+  const [editingCustomer, setEditingCustomer] = useState(null);
+
+  const [formData, setFormData] = useState({
     name: "",
     email: "",
     phone: "",
     address: "",
+    status: "active", // ✅ default
   });
 
   // ✅ Fetch Customers
@@ -30,24 +33,51 @@ const Customers = () => {
     }
   };
 
-  // ✅ Add Customer
-  const handleAddCustomer = async (e) => {
+  // ✅ Add or Update Customer
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (adding) return; // ⛔ Prevent double submit
-    setAdding(true);
+    if (saving) return;
+    setSaving(true);
+
     try {
-      const res = await axios.post(
-        `${domain}/customers/create`,
-        newCustomer
-      );
-      setCustomers([...customers, res.data.data]);
+      if (editingCustomer) {
+        // 🔄 Update
+        const res = await axios.put(
+          `${domain}/customers/update/${editingCustomer._id}`,
+          formData
+        );
+        setCustomers((prev) =>
+          prev.map((c) =>
+            c._id === editingCustomer._id ? res.data.data : c
+          )
+        );
+      } else {
+        // ➕ Add
+        const res = await axios.post(`${domain}/customers/create`, formData);
+        setCustomers([...customers, res.data.data]);
+      }
+
       setShowModal(false);
-      setNewCustomer({ name: "", email: "", phone: "", address: "" });
+      setFormData({ name: "", email: "", phone: "", address: "", status: "active" });
+      setEditingCustomer(null);
     } catch (error) {
-      console.error("Error adding customer", error);
+      console.error("Error saving customer", error);
     } finally {
-      setAdding(false);
+      setSaving(false);
     }
+  };
+
+  // ✅ Open edit modal with customer data
+  const handleEdit = (customer) => {
+    setEditingCustomer(customer);
+    setFormData({
+      name: customer.name,
+      email: customer.email,
+      phone: customer.phone,
+      address: customer.address,
+      status: customer.status || "active",
+    });
+    setShowModal(true);
   };
 
   useEffect(() => {
@@ -60,7 +90,11 @@ const Customers = () => {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-extrabold text-gray-800">👥 Customers</h1>
         <button
-          onClick={() => setShowModal(true)}
+          onClick={() => {
+            setEditingCustomer(null);
+            setFormData({ name: "", email: "", phone: "", address: "", status: "active" });
+            setShowModal(true);
+          }}
           className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-800 text-white px-5 py-2.5 rounded-xl shadow hover:scale-105 transition-transform"
         >
           <FaPlus className="w-4 h-4" /> Add Customer
@@ -83,7 +117,8 @@ const Customers = () => {
                 <th className="p-4 text-left">Email</th>
                 <th className="p-4 text-left">Phone</th>
                 <th className="p-4 text-left">Address</th>
-                 <th className="p-4 text-left">Status</th>
+                <th className="p-4 text-left">Status</th>
+                <th className="p-4 text-left">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -98,7 +133,21 @@ const Customers = () => {
                   <td className="p-4 text-gray-600">{c.email}</td>
                   <td className="p-4 text-gray-600">{c.phone}</td>
                   <td className="p-4 text-gray-600">{c.address}</td>
-                   <td className="p-4 text-gray-600">{c.status}</td>
+                  <td
+                    className={`p-4 font-semibold ${
+                      c.status === "active" ? "text-green-600" : "text-red-600"
+                    }`}
+                  >
+                    {c.status}
+                  </td>
+                  <td className="p-4 flex gap-3">
+                    <button
+                      onClick={() => handleEdit(c)}
+                      className="px-3 py-1 bg-yellow-500 text-white rounded-lg flex items-center gap-2 hover:bg-yellow-600 transition"
+                    >
+                      <FaEdit /> Edit
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -106,20 +155,20 @@ const Customers = () => {
         </div>
       )}
 
-      {/* Add Customer Modal */}
+      {/* Add/Edit Customer Modal */}
       {showModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50">
           <div className="bg-white p-6 rounded-2xl w-[420px] shadow-2xl animate-fadeIn">
             <h2 className="text-2xl font-bold mb-4 text-gray-800">
-              ➕ Add Customer
+              {editingCustomer ? "✏️ Edit Customer" : "➕ Add Customer"}
             </h2>
-            <form onSubmit={handleAddCustomer} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
               <input
                 type="text"
                 placeholder="Full Name"
-                value={newCustomer.name}
+                value={formData.name}
                 onChange={(e) =>
-                  setNewCustomer({ ...newCustomer, name: e.target.value })
+                  setFormData({ ...formData, name: e.target.value })
                 }
                 className="w-full border px-3 py-2 rounded-lg focus:ring focus:ring-blue-300"
                 required
@@ -127,9 +176,9 @@ const Customers = () => {
               <input
                 type="email"
                 placeholder="Email Address"
-                value={newCustomer.email}
+                value={formData.email}
                 onChange={(e) =>
-                  setNewCustomer({ ...newCustomer, email: e.target.value })
+                  setFormData({ ...formData, email: e.target.value })
                 }
                 className="w-full border px-3 py-2 rounded-lg focus:ring focus:ring-blue-300"
                 required
@@ -137,9 +186,9 @@ const Customers = () => {
               <input
                 type="text"
                 placeholder="Phone Number"
-                value={newCustomer.phone}
+                value={formData.phone}
                 onChange={(e) =>
-                  setNewCustomer({ ...newCustomer, phone: e.target.value })
+                  setFormData({ ...formData, phone: e.target.value })
                 }
                 className="w-full border px-3 py-2 rounded-lg focus:ring focus:ring-blue-300"
                 required
@@ -147,12 +196,24 @@ const Customers = () => {
               <input
                 type="text"
                 placeholder="Address"
-                value={newCustomer.address}
+                value={formData.address}
                 onChange={(e) =>
-                  setNewCustomer({ ...newCustomer, address: e.target.value })
+                  setFormData({ ...formData, address: e.target.value })
                 }
                 className="w-full border px-3 py-2 rounded-lg focus:ring focus:ring-blue-300"
               />
+
+              {/* ✅ Status Dropdown */}
+              <select
+                value={formData.status}
+                onChange={(e) =>
+                  setFormData({ ...formData, status: e.target.value })
+                }
+                className="w-full border px-3 py-2 rounded-lg focus:ring focus:ring-blue-300"
+              >
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
 
               {/* Action Buttons */}
               <div className="flex justify-end gap-3 mt-6">
@@ -160,19 +221,21 @@ const Customers = () => {
                   type="button"
                   onClick={() => setShowModal(false)}
                   className="px-4 py-2 border rounded-lg hover:bg-gray-100 transition"
-                  disabled={adding}
+                  disabled={saving}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={adding}
+                  disabled={saving}
                   className="flex items-center justify-center gap-2 px-5 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition disabled:opacity-70 disabled:cursor-not-allowed"
                 >
-                  {adding ? (
+                  {saving ? (
                     <>
                       <FaSpinner className="animate-spin" /> Saving...
                     </>
+                  ) : editingCustomer ? (
+                    "Update"
                   ) : (
                     "Add"
                   )}

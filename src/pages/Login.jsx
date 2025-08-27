@@ -129,21 +129,21 @@ const Login = () => {
             alt="RevenuX Logo"
             className="mx-auto w-20 h-20 mb-6"
           />
-          <h1 className="text-4xl font-bold text-gray-800 mb-4">RevenuX</h1>
+          <h1 className="text-4xl font-bold text-gray-800 mb-4">FlashRent</h1>
           <p className="text-gray-600 text-lg mb-4">
             Smart billing. Clear insights. Faster decisions.
           </p>
           <p className="text-gray-500 mb-3">
-            RevenuX empowers your business with seamless billing, effortless
+            FlashRent empowers your business with seamless billing, effortless
             customer management, and real-time revenue tracking.
           </p>
           <p className="text-gray-500 mb-3">
-            Whether you’re handling 50 invoices or 5,000, RevenuX ensures your
+            Whether you’re handling 50 invoices or 5,000, FlashRent ensures your
             data stays secure and accessible — giving you the confidence to make
             the right decisions, at the right time.
           </p>
           <p className="text-gray-500">
-            Trusted by retailers and enterprises alike, RevenuX isn’t just a
+            Trusted by retailers and enterprises alike, FlashRent isn’t just a
             billing system — it’s your growth partner in the digital age.
           </p>
         </div>

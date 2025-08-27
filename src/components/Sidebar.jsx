@@ -27,7 +27,7 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
             } rounded-full`}
           />
           {!collapsed && (
-            <h1 className="text-xl font-bold whitespace-nowrap">RevenuX</h1>
+            <h1 className="text-xl font-bold whitespace-nowrap">FlashRent</h1>
           )}
         </div>
 

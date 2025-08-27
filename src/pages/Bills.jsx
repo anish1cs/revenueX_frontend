@@ -1,13 +1,23 @@
 import React, { useEffect, useState } from "react";
-import { FaDownload, FaEnvelope, FaCheck, FaSpinner } from "react-icons/fa";
+import {
+  FaDownload,
+  FaEnvelope,
+  FaCheck,
+  FaSpinner,
+  FaEdit,
+} from "react-icons/fa";
 import axios from "axios";
 import domain from "../constants";
 
 const Bills = () => {
   const [bills, setBills] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [processing, setProcessing] = useState(null); // { billId, action }
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedBill, setSelectedBill] = useState(null);
+  const [newAmount, setNewAmount] = useState("");
 
-  // ✅ Fetch Bills + enrich with customer & payment mode
+  // ✅ Fetch Bills
   const fetchBills = async () => {
     try {
       setLoading(true);
@@ -19,7 +29,6 @@ const Bills = () => {
           let customer = null;
           let mode = "-";
 
-          // fetch customer
           try {
             const custRes = await axios.get(
               `${domain}/customers/get/${bill.customerId}`
@@ -29,7 +38,6 @@ const Bills = () => {
             console.warn("Customer fetch failed");
           }
 
-          // fetch payment mode
           try {
             const payRes = await axios.get(
               `${domain}/payments/bills/${bill.billId}`
@@ -56,13 +64,13 @@ const Bills = () => {
     fetchBills();
   }, []);
 
-  // ✅ Download invoice (from backend)
+  // ✅ Download invoice
   const handleDownload = async (billId, customerName) => {
+    setProcessing({ billId, action: "download" });
     try {
       const res = await axios.get(`/api/bills/${billId}/invoice`, {
         responseType: "blob",
       });
-
       const url = window.URL.createObjectURL(new Blob([res.data]));
       const link = document.createElement("a");
       link.href = url;
@@ -72,11 +80,14 @@ const Bills = () => {
       link.remove();
     } catch (e) {
       console.error("Error downloading invoice", e);
+    } finally {
+      setProcessing(null);
     }
   };
 
   // ✅ Mark Paid
   const handleMarkPaid = async (billId, mode) => {
+    setProcessing({ billId, action: `mark-${mode}` });
     try {
       await axios.post(`${domain}/payments/create`, {
         billId,
@@ -85,16 +96,44 @@ const Bills = () => {
       fetchBills();
     } catch (e) {
       console.error("Error marking paid", e);
+    } finally {
+      setProcessing(null);
     }
   };
 
   // ✅ Send request
   const handleSendRequest = async (bill) => {
+    setProcessing({ billId: bill.billId, action: "request" });
     try {
-      await axios.post(`/api/bills/${bill.billId}/send-request`);
+      await axios.post(`${domain}/payments/bills/${bill.billId}/send-request`);
       alert(`Payment request sent to ${bill.customer?.name}`);
     } catch (e) {
       console.error("Error sending request", e);
+    } finally {
+      setProcessing(null);
+    }
+  };
+
+  // ✅ Update Bill Amount
+  const handleUpdateAmount = async (e) => {
+    e.preventDefault();
+    if (!selectedBill) return;
+    setProcessing({ billId: selectedBill.billId, action: "update" });
+
+    try {
+      const response = await axios.put(`${domain}/bills/${selectedBill.billId}`, {
+        amount: newAmount,
+      });
+      console.log(response);
+      
+      setShowEditModal(false);
+      setSelectedBill(null);
+      setNewAmount("");
+      fetchBills();
+    } catch (e) {
+      console.error("Error updating bill amount", e);
+    } finally {
+      setProcessing(null);
     }
   };
 
@@ -161,29 +200,79 @@ const Bills = () => {
                             bill.customer?.name || "User"
                           )
                         }
-                        className="flex items-center gap-2 bg-green-600 text-white px-3 py-2 rounded-lg shadow hover:bg-green-700 transition"
+                        disabled={
+                          processing?.billId === bill.billId &&
+                          processing?.action === "download"
+                        }
+                        className="flex items-center gap-2 bg-green-600 text-white px-3 py-2 rounded-lg shadow hover:bg-green-700 transition disabled:opacity-70"
                       >
-                        <FaDownload /> Download
+                        {processing?.billId === bill.billId &&
+                        processing?.action === "download" ? (
+                          <>
+                            <FaSpinner className="animate-spin" /> Processing...
+                          </>
+                        ) : (
+                          <>
+                            <FaDownload /> Download
+                          </>
+                        )}
                       </button>
                     ) : (
                       <>
                         <button
                           onClick={() => handleSendRequest(bill)}
-                          className="flex items-center gap-2 bg-yellow-600 text-white px-3 py-2 rounded-lg shadow hover:bg-yellow-700 transition"
+                          disabled={
+                            processing?.billId === bill.billId &&
+                            processing?.action === "request"
+                          }
+                          className="flex items-center gap-2 bg-yellow-600 text-white px-3 py-2 rounded-lg shadow hover:bg-yellow-700 transition disabled:opacity-70"
                         >
-                          <FaEnvelope /> Send Request
+                          {processing?.billId === bill.billId &&
+                          processing?.action === "request" ? (
+                            <>
+                              <FaSpinner className="animate-spin" /> Sending...
+                            </>
+                          ) : (
+                            <>
+                              <FaEnvelope /> Send Request
+                            </>
+                          )}
                         </button>
                         <div className="flex gap-2">
                           {["Cash", "UPI", "Card"].map((mode) => (
                             <button
                               key={mode}
                               onClick={() => handleMarkPaid(bill.billId, mode)}
-                              className="flex items-center gap-1 bg-blue-600 text-white px-2 py-1 rounded-lg shadow hover:bg-blue-700 text-sm transition"
+                              disabled={
+                                processing?.billId === bill.billId &&
+                                processing?.action === `mark-${mode}`
+                              }
+                              className="flex items-center gap-1 bg-blue-600 text-white px-2 py-1 rounded-lg shadow hover:bg-blue-700 text-sm transition disabled:opacity-70"
                             >
-                              <FaCheck /> {mode}
+                              {processing?.billId === bill.billId &&
+                              processing?.action === `mark-${mode}` ? (
+                                <>
+                                  <FaSpinner className="animate-spin" /> ...
+                                </>
+                              ) : (
+                                <>
+                                  <FaCheck /> {mode}
+                                </>
+                              )}
                             </button>
                           ))}
                         </div>
+                        {/* ✅ Edit button */}
+                        <button
+                          onClick={() => {
+                            setSelectedBill(bill);
+                            setNewAmount(bill.amount);
+                            setShowEditModal(true);
+                          }}
+                          className="flex items-center gap-2 bg-purple-600 text-white px-3 py-2 rounded-lg shadow hover:bg-purple-700 transition"
+                        >
+                          <FaEdit /> Edit
+                        </button>
                       </>
                     )}
                   </td>
@@ -191,6 +280,52 @@ const Bills = () => {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* ✅ Edit Modal */}
+      {showEditModal && selectedBill && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50">
+          <div className="bg-white p-6 rounded-2xl w-[400px] shadow-2xl">
+            <h2 className="text-xl font-bold mb-4 text-gray-800">
+              ✏️ Update Bill Amount
+            </h2>
+            <form onSubmit={handleUpdateAmount} className="space-y-4">
+              <input
+                type="number"
+                value={newAmount}
+                onChange={(e) => setNewAmount(e.target.value)}
+                className="w-full border px-3 py-2 rounded-lg focus:ring focus:ring-purple-300"
+                required
+              />
+              <div className="flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowEditModal(false)}
+                  className="px-4 py-2 border rounded-lg hover:bg-gray-100 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={
+                    processing?.billId === selectedBill.billId &&
+                    processing?.action === "update"
+                  }
+                  className="flex items-center gap-2 px-5 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition disabled:opacity-70"
+                >
+                  {processing?.billId === selectedBill.billId &&
+                  processing?.action === "update" ? (
+                    <>
+                      <FaSpinner className="animate-spin" /> Updating...
+                    </>
+                  ) : (
+                    "Update"
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>
