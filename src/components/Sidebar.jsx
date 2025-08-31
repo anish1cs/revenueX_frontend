@@ -20,15 +20,13 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
       <div className="flex items-center justify-between px-4 h-16 border-b border-blue-700">
         <div className="flex items-center gap-2">
           <img
-            src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQBQV8ym2gpq8drPPZt8BliGhNUYzXwlOc88Q&s"
+            src="./icon.png"
             alt="Logo"
             className={`${
-              collapsed ? "w-8 h-8 mx-auto" : "w-10 h-10"
-            } rounded-full`}
+              collapsed ? "w-8 h-8 mx-auto " : "w-31 h-10"
+            } rounded`}
           />
-          {!collapsed && (
-            <h1 className="text-xl font-bold whitespace-nowrap">FlashRent</h1>
-          )}
+         
         </div>
 
         <button

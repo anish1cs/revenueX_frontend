@@ -66,14 +66,16 @@ const LandingPage = () => {
       <nav className="flex items-center justify-between px-4 md:px-8 py-4 sticky top-0 z-50 bg-[#1F1F1F] shadow-lg">
         {/* Logo */}
         <div className="flex items-center gap-3">
-          <img
-            src="https://t3.ftcdn.net/jpg/03/91/89/84/360_F_391898485_QPJhJT5WJVLFOAplGXmZWKFbyHW9VAdm.jpg"
+         <a href="/">
+           <img
+            src="./icon.png"
             alt="FlashRent Logo"
-            className="w-17 h-9 border-amber-300 border-2 rounded-md object-cover"
+            className="w-27 h-9 border-amber-300 border-2 rounded-md object-fit"
           />
-          <span className="hidden md:inline text-2xl font-bold text-[#FFD700]">
+         </a>
+          {/* <span className="hidden md:inline text-2xl font-bold text-[#FFD700]">
             FlashRent
-          </span>
+          </span> */}
         </div>
 
         {/* Contact Details */}
@@ -140,9 +142,9 @@ const LandingPage = () => {
       <section className="py-16 px-6 md:px-20 bg-[#1F1F1F]" id="about">
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-10">
           <img
-            src="https://besthomesindia.com/public/uploads/page_img//1706682493601b20320ec1c132068f7d67_founder-support-id-dummy.jpg"
+            src="./owner.jpeg"
             alt="Owner"
-            className="w-52 h-52 rounded-full border-4 border-[#FFD700] object-cover"
+            className="w-52  h-52 rounded-full border-4 border-[#FFD700] object-cover"
             data-aos="fade-right"
           />
           <div data-aos="fade-left">
